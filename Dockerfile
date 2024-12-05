@@ -92,20 +92,26 @@ RUN composer install --no-interaction --no-dev --optimize-autoloader
 USER root
 
 # Configure Apache
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
 RUN echo '<VirtualHost *:80>\n\
+    ServerName localhost\n\
     ServerAdmin webmaster@localhost\n\
     DocumentRoot /var/www/html/core/public\n\
     <Directory /var/www/html/core/public>\n\
-        Options Indexes FollowSymLinks\n\
+        Options -Indexes +FollowSymLinks +MultiViews\n\
         AllowOverride All\n\
         Require all granted\n\
+        DirectoryIndex index.php\n\
+        FallbackResource /index.php\n\
     </Directory>\n\
     ErrorLog ${APACHE_LOG_DIR}/error.log\n\
     CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
+    LogLevel debug\n\
 </VirtualHost>' > /etc/apache2/sites-available/000-default.conf
 
 # Enable Apache modules
-RUN a2enmod rewrite
+RUN a2enmod rewrite headers
 
 # Generate environment file from arguments
 RUN echo "APP_NAME=\"${APP_NAME}\"\n\
