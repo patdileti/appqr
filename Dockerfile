@@ -1,30 +1,5 @@
 FROM php:8.2-apache
 
-# Arguments for environment variables
-ARG APP_NAME
-ARG APP_ENV
-ARG APP_KEY
-ARG APP_DEBUG
-ARG APP_URL
-ARG DB_CONNECTION
-ARG DB_HOST
-ARG DB_PORT
-ARG DB_DATABASE
-ARG DB_USERNAME
-ARG DB_PASSWORD
-ARG FILESYSTEM_DISK
-ARG SESSION_DRIVER
-ARG CACHE_DRIVER
-ARG QUEUE_CONNECTION
-ARG MAIL_MAILER
-ARG MAIL_HOST
-ARG MAIL_PORT
-ARG MAIL_USERNAME
-ARG MAIL_PASSWORD
-ARG MAIL_ENCRYPTION
-ARG MAIL_FROM_ADDRESS
-ARG MAIL_FROM_NAME
-
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
@@ -69,20 +44,20 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy application files first
+# Copy application files
 COPY . /var/www/html/
 
-# Set up directory structure
+# Set up Laravel storage directory structure
 RUN mkdir -p /var/www/html/core/storage/framework/sessions \
     && mkdir -p /var/www/html/core/storage/framework/views \
     && mkdir -p /var/www/html/core/storage/framework/cache \
-    && mkdir -p /var/www/html/core/storage/logs \
-    && mkdir -p /var/www/html/core/public
+    && mkdir -p /var/www/html/core/storage/logs
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/core/storage \
-    && chmod -R 755 /var/www/html/core/public
+    && chmod -R 775 /var/www/html/core/storage \
+    && chmod -R 775 /var/www/html/core/bootstrap/cache \
+    && chmod -R 775 /var/www/html/core/public
 
 # Install dependencies
 WORKDIR /var/www/html/core
@@ -98,9 +73,10 @@ RUN echo '<VirtualHost *:80>\n\
     ServerName localhost\n\
     DocumentRoot /var/www/html/core/public\n\
     <Directory /var/www/html/core/public>\n\
-        Options Indexes FollowSymLinks\n\
+        Options Indexes FollowSymLinks MultiViews\n\
         AllowOverride All\n\
         Require all granted\n\
+        DirectoryIndex index.php\n\
     </Directory>\n\
     ErrorLog ${APACHE_LOG_DIR}/error.log\n\
     CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
@@ -108,34 +84,6 @@ RUN echo '<VirtualHost *:80>\n\
 
 # Enable Apache modules
 RUN a2enmod rewrite
-
-# Generate environment file from arguments
-RUN echo "APP_NAME=\"${APP_NAME}\"\n\
-APP_ENV=${APP_ENV}\n\
-APP_KEY=${APP_KEY}\n\
-APP_DEBUG=${APP_DEBUG}\n\
-APP_URL=${APP_URL}\n\
-DB_CONNECTION=${DB_CONNECTION}\n\
-DB_HOST=${DB_HOST}\n\
-DB_PORT=${DB_PORT}\n\
-DB_DATABASE=${DB_DATABASE}\n\
-DB_USERNAME=${DB_USERNAME}\n\
-DB_PASSWORD=${DB_PASSWORD}\n\
-FILESYSTEM_DISK=${FILESYSTEM_DISK}\n\
-SESSION_DRIVER=${SESSION_DRIVER}\n\
-CACHE_DRIVER=${CACHE_DRIVER}\n\
-QUEUE_CONNECTION=${QUEUE_CONNECTION}\n\
-MAIL_MAILER=${MAIL_MAILER}\n\
-MAIL_HOST=${MAIL_HOST}\n\
-MAIL_PORT=${MAIL_PORT}\n\
-MAIL_USERNAME=${MAIL_USERNAME}\n\
-MAIL_PASSWORD=${MAIL_PASSWORD}\n\
-MAIL_ENCRYPTION=${MAIL_ENCRYPTION}\n\
-MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}\n\
-MAIL_FROM_NAME=\"${MAIL_FROM_NAME}\"" > /var/www/html/core/.env
-
-# Verify Apache configuration
-RUN apache2ctl configtest
 
 EXPOSE 80
 
