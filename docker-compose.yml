@@ -1,0 +1,36 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+      - ./core/storage:/var/www/html/core/storage
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+    networks:
+      - menuqr-network
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: menuqr
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: password
+      MYSQL_USER: menuqr
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - menuqr-network
+
+networks:
+  menuqr-network:
+    driver: bridge
+
+volumes:
+  dbdata:
