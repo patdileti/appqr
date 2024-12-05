@@ -51,16 +51,23 @@ COPY . /var/www/html/
 WORKDIR /var/www/html/core
 RUN composer install --no-interaction
 
-# Set the correct DocumentRoot and Directory settings
-RUN sed -i 's!/var/www/html!/var/www/html/core/public!g' /etc/apache2/sites-available/000-default.conf \
-    && sed -i 's#Directory /var/www/>#Directory /var/www/html/core/public>#g' /etc/apache2/apache2.conf
+# Configure Apache
+RUN echo '<VirtualHost *:80>\n\
+    DocumentRoot /var/www/html/core/public\n\
+    <Directory /var/www/html/core/public>\n\
+        Options Indexes FollowSymLinks\n\
+        AllowOverride All\n\
+        Require all granted\n\
+    </Directory>\n\
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
 
 # Enable Apache modules
 RUN a2enmod rewrite
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/core/storage
+    && chmod -R 755 /var/www/html/core/storage \
+    && chmod -R 755 /var/www/html/core/public
 
 EXPOSE 80
 
