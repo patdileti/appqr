@@ -1,0 +1,6 @@
+/*
+Theme Name: Modern Theme
+Theme URI: https://bylancer.com/
+Author: Bylancer
+Description: A Beautiful, Professional and Modern Template.
+*/

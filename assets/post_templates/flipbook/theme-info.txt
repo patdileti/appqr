@@ -1,0 +1,7 @@
+/*
+Theme Name: Flipbook Theme
+Theme Type: image-menu
+Theme URI: https://bylancer.com/
+Author: Bylancer
+Description: A Beautiful Animated Template.
+*/
