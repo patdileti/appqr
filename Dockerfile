@@ -69,21 +69,20 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Create storage directory structure
-RUN mkdir -p /var/www/html/core/storage/framework/{sessions,views,cache} \
-    && mkdir -p /var/www/html/core/storage/logs \
-    && mkdir -p /var/www/html/core/public \
-    && chown -R www-data:www-data /var/www/html
-
-# Copy application files
+# Copy application files first
 COPY . /var/www/html/
+
+# Set up directory structure
+RUN mkdir -p /var/www/html/core/storage/framework/sessions \
+    && mkdir -p /var/www/html/core/storage/framework/views \
+    && mkdir -p /var/www/html/core/storage/framework/cache \
+    && mkdir -p /var/www/html/core/storage/logs \
+    && mkdir -p /var/www/html/core/public
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
-    && find /var/www/html/core/storage -type d -exec chmod 755 {} \; \
-    && find /var/www/html/core/storage -type f -exec chmod 644 {} \; \
-    && find /var/www/html/core/public -type d -exec chmod 755 {} \; \
-    && find /var/www/html/core/public -type f -exec chmod 644 {} \;
+    && chmod -R 755 /var/www/html/core/storage \
+    && chmod -R 755 /var/www/html/core/public
 
 # Install dependencies
 WORKDIR /var/www/html/core
@@ -94,24 +93,21 @@ USER root
 # Configure Apache
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
+# Configure Apache virtual host
 RUN echo '<VirtualHost *:80>\n\
     ServerName localhost\n\
-    ServerAdmin webmaster@localhost\n\
     DocumentRoot /var/www/html/core/public\n\
     <Directory /var/www/html/core/public>\n\
-        Options -Indexes +FollowSymLinks +MultiViews\n\
+        Options Indexes FollowSymLinks\n\
         AllowOverride All\n\
         Require all granted\n\
-        DirectoryIndex index.php\n\
-        FallbackResource /index.php\n\
     </Directory>\n\
     ErrorLog ${APACHE_LOG_DIR}/error.log\n\
     CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
-    LogLevel debug\n\
 </VirtualHost>' > /etc/apache2/sites-available/000-default.conf
 
 # Enable Apache modules
-RUN a2enmod rewrite headers
+RUN a2enmod rewrite
 
 # Generate environment file from arguments
 RUN echo "APP_NAME=\"${APP_NAME}\"\n\
@@ -137,6 +133,9 @@ MAIL_PASSWORD=${MAIL_PASSWORD}\n\
 MAIL_ENCRYPTION=${MAIL_ENCRYPTION}\n\
 MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}\n\
 MAIL_FROM_NAME=\"${MAIL_FROM_NAME}\"" > /var/www/html/core/.env
+
+# Verify Apache configuration
+RUN apache2ctl configtest
 
 EXPOSE 80
 
